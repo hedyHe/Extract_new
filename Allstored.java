@@ -89,8 +89,6 @@ public class Allstored {
         WritetoFile(tuplespath,seeds,turn);
         //根据initial seed tuples 从数据集中抽取pattern
         ReadFilebyTuples(datapath , seeds , ls , pattern ,turn ) ;
-        //将抽取到的pattern列表写入文件中
-        WritetoFile1(patternoftuples , ls);
         //计算pattern的置信度
         System.out.print("计算pattern的置信度:");
         Caculate(ls,new_seeds,pattern,0);
@@ -99,6 +97,8 @@ public class Allstored {
         new_pa.putAll(pattern);
         //将抽取到的pattern写入文件中
         WritetoFile(patternpath,pattern,turn);
+        //将抽取到的pattern列表写入文件中
+        WritetoFile1(patternoftuples , ls);
         turn ++;
         ls.clear();
         seeds = new HashMap<>();
@@ -108,14 +108,14 @@ public class Allstored {
         //Delete(ls,seeds,num);
         //删除已经被抽取过的所有tuples
         JudgeExist(tuplespath,ls,seeds);
-        //将抽取到的tuple列表写入文件中
-        WritetoFile1(tuplesofpattern,ls);
         //计算tuples的置信度,并将大于阈值的tuples保存下来
         System.out.print("计算tuple置信度:");
         Caculate(ls,new_pa,seeds,0);
         new_seeds.putAll(seeds);
         //处理之后的tuples写入文件
         WritetoFile(tuplespath,seeds,turn);
+        //将抽取到的tuple列表写入文件中
+        WritetoFile1(tuplesofpattern,ls);
         //计算每一轮的正确率
         CaculateAccuracy(stdfile,pattern,false_pa,seeds,false_tu,tag);
         //num = 3;
@@ -128,7 +128,6 @@ public class Allstored {
             JudgeExist(patternpath,ls,pattern);
             //删除抽取次数小于阈值的元素
             Delete(ls,pattern,num);
-            WritetoFile1(patternoftuples,ls);
             //计算pattern的正确率
             System.out.print("计算pattern的置信度:");
             Caculate(ls,new_seeds,pattern,0);
@@ -139,7 +138,8 @@ public class Allstored {
             Top(pattern,ls);
             new_pa.putAll(pattern);
             WritetoFile(patternpath,pattern,turn);
-
+            WritetoFile1(patternoftuples,ls);
+            turn++;
             //根据pattern抽取tuples
             ls.clear();
             seeds = new HashMap<>();
@@ -148,7 +148,6 @@ public class Allstored {
             JudgeExist(tuplespath,ls,seeds);
             //删除抽取次数小于阈值的元素
             //Delete(ls,seeds,num);
-            WritetoFile1(tuplesofpattern,ls);
             //计算tuples的正确率,并将大于阈值的tuples保存下来
             System.out.print("计算tuple的置信度:");
             Caculate(ls,new_pa,seeds,0);
@@ -158,7 +157,8 @@ public class Allstored {
             new_seeds.putAll(seeds);
             //处理之后的tuples写入文件
             WritetoFile(tuplespath,seeds,turn);
-            turn++;
+            WritetoFile1(tuplesofpattern,ls);
+
             //计算每一轮的正确率
             CaculateAccuracy(stdfile,new_pa,false_pa,new_seeds,false_tu,tag);
         }
