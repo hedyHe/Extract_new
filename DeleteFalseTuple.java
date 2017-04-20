@@ -16,7 +16,7 @@ public class DeleteFalseTuple {
         HashSet set ;
         HashSet<String> pattern = new HashSet<>();
         HashSet<String> tuple = new HashSet<>();
-        String tag = "AL";
+        String tag = "PG";
         //从excel文件中读取该聚类中的所有数据，同时删除不正确的pattern
         Excel.ReadExcel(filename,pattern,tuple,tag);
         System.out.println("the size of pattern is:"+pattern.size());

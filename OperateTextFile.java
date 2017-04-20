@@ -8,7 +8,162 @@ import java.util.*;
  */
 public class OperateTextFile {
 
-    public static void WriteMatricToFile(String filename , double[][] matrix , int lentgh){
+    public static void WritetoTxt1(String filename , HashMap<String ,SelfAlgorithm.Features> pattern){
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                file.createNewFile();
+            }
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
+            Iterator it = pattern.entrySet().iterator();
+            String pa;
+            SelfAlgorithm.Features  f;
+            while (it.hasNext()){
+                Map.Entry entry = (Map.Entry) it.next();
+                pa = (String) entry.getKey();
+                f = (SelfAlgorithm.Features)entry.getValue();
+                System.out.println(pa+"\t"+f.getP1()+"\t"+f.getP2()+"\t"+f.getP3()+"\t"+f.getP4()+"\t"+f.getSub()+"\t"+f.getStandDev()+"\t"+f.getLevel()+"\t"+f.getAll_num()+"\t"+f.getMaxlevel());
+                bw.write(pa+"\t"+f.getP1()+"\t"+f.getP2()+"\t"+f.getP3()+"\t"+f.getP4()+"\t"+f.getSub()+"\t"+f.getStandDev()+"\t"+f.getLevel()+"\t"+f.getAll_num()+"\t"+f.getMaxlevel()+"\n");
+            }
+            bw.flush();
+            bw.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public static int[][] ReadFiletoArr(String filename , int length){
+        int[][] arr = new int[length][length];
+
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                System.out.println("can't find the file!");
+            }
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+            int row= 0 ;
+            int num;
+            while ((line = br.readLine()) != null){
+                if (line.contains(":")){
+                    continue;
+                }
+                if (line.equals("")){
+                    break;
+                }
+                for (int i = 0 ; i < length; i++){
+                    num = Integer.parseInt(line.split("\t")[i]);
+                    arr[row][i] = num;
+                }
+                row++;
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        return arr;
+    }
+
+    public  static void WriteMaptoFile(String filename, HashMap<Integer , double[]> map,HashMap<String ,Integer> pa_seq,int length){
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                file.createNewFile();
+            }
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
+            Iterator it = map.entrySet().iterator();
+            Iterator in_it ;
+            int key , order;
+            double[] arr;
+            String pa;
+            while (it.hasNext()){
+                Map.Entry entry = (Map.Entry)it.next();
+                key = (int)entry.getKey();
+                arr = (double[]) entry.getValue();
+                bw.write(key+":"+"\n");
+                //找到pattern及其对应的score
+                in_it = pa_seq.entrySet().iterator();
+                while (in_it.hasNext()){
+                    Map.Entry en = (Map.Entry) in_it.next();
+                    pa = (String) en.getKey();
+                    order = (int) en.getValue();
+                    bw.write(order+"\t"+pa+"\t"+arr[order]+"\n");
+                }
+                bw.write("\n");
+            }
+            bw.close();
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void ReadFileToList(String filename , HashMap<String , Integer> ls){
+        try{
+            File file = new File(filename);
+            if (!file.exists()){
+                System.out.println("can't find the file!");
+            }
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line , tu;
+            int count = 0 ;
+            while ((line = br.readLine()) != null){
+                if (line.contains(":")   || line.equals("")){
+                    continue;
+                }
+                tu =  line.split("\t")[0]+"\t"+line.split("\t")[1];
+                ls.put(tu,count++);
+            }
+            br.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+    public static void WriteMatricToFile1(String filename , int[][] matrix , int lentgh){
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                file.createNewFile();
+            }
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
+            bw.write("the current result is :"+"\n");
+            for (int i = 0 ;  i < lentgh ; i++ ){
+                for (int  j = 0 ; j  < lentgh ; j++){
+                    bw.write(matrix[i][j]+"\t");
+                }
+                bw.write("\n");
+            }
+            bw.write("\n");
+            bw.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void WriteMatricToFile(String filename , int[][] matrix , int lentgh){
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                file.createNewFile();
+            }
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
+            bw.write("the current result is :"+"\n");
+            for (int i = 0 ;  i < lentgh ; i++ ){
+                for (int  j = 0 ; j  < lentgh ; j++){
+                    bw.write(matrix[j][i]+"\t");
+                }
+                bw.write("\n");
+            }
+            bw.write("\n");
+            bw.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void WriteMatricToFile1(String filename , double[][] matrix , int lentgh){
         try {
             File file = new File(filename);
             if (!file.exists()){
@@ -17,7 +172,7 @@ public class OperateTextFile {
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
             for (int i = 0 ;  i < lentgh ; i++ ){
                 for (int  j = 0 ; j  < lentgh ; j++){
-                    bw.write(matrix[j][i]+"\t");
+                    bw.write(matrix[i][j]+"\t");
                 }
                 bw.write("\n");
             }
@@ -104,6 +259,7 @@ public class OperateTextFile {
             e.printStackTrace();
         }
     }
+
     public static void ReadPatterntoMap(String filename,HashMap<String,Integer> map , HashMap<String ,Integer> pa){
         int count = 0 ;
         int sequence = 0 ;
