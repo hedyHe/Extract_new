@@ -249,13 +249,13 @@ public class SelfAlgorithm {
             Features f = pattern.get(pa);
             array = map.get(order);  //获取保存的数组信息
             //设置性质3的值
-            System.out.println("order = "+order);
+            //System.out.println("order = "+order);
             f.setP3(array[0]);
             //设置性质4的值
             f.setP4(array[1]);
             //设置性质5的值
             ls = sub.get(order);
-            if (ls == null){   //最后一轮抽取到的pattern是没有子集的
+            if (ls == null){       //最后一轮抽取到的pattern是没有子集的
                 f.setSub(0);
                 f.setStandDev(0);
             }
