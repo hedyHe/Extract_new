@@ -8,6 +8,30 @@ import java.util.*;
  */
 public class OperateTextFile {
 
+    public static void WriteMapToFile(String filename, HashMap<String,Double> map){
+        Iterator it = map.entrySet().iterator();
+        String key ;
+        double count;
+
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                file.createNewFile();
+            }
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
+            while (it.hasNext()){
+                Map.Entry entry = (Map.Entry) it.next();
+                key = (String) entry.getKey();
+                count = (Double) entry.getValue();
+                bw.write(key+"\t"+count+"\n");
+            }
+            bw.write("\n");
+            bw.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
     public static void WritetoTxt1(String filename , HashMap<String ,SelfAlgorithm.Features> pattern){
         try {
             File file = new File(filename);
@@ -183,27 +207,29 @@ public class OperateTextFile {
 
     }
 
-    public static void ReadFileToMap(String filename , HashMap<String , HashSet<String>> map){
+    public static void ReadFileToMap(String filename , HashMap<String , Double> map){
         try {
             File file = new File(filename);
             if (!file.exists()){
                 System.out.println("can't find the file!");
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
-            String line,key,value;
+            String line,org,loc;
             while ((line = br.readLine()) != null){
-                if (line.contains(":")){
-                    value = line.split(":")[0];
+                if (line.equals("")){
+                    break;
+                }
+                if (line.split("\t")[2] == "0"){   //判断当前的seed的顺序是否为ol，若不是，则需要调整
+                    org = line.split("\t")[1];
+                    loc = line.split("\t")[0];
                 }
                 else {
-                    if (line.equals("")){   //若当前聚类抽取结束
-
-                    }
-
+                    org = line.split("\t")[0];
+                    loc = line.split("\t")[1];
                 }
-
+                map.put(org +"\t"+loc,1.0);
             }
-
+            br.close();
         }catch (IOException e){
             e.printStackTrace();
         }

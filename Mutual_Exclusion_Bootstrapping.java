@@ -1,110 +1,132 @@
 package Snowball;
 
-import org.omg.PortableInterceptor.INACTIVE;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.DoubleBinaryOperator;
 
 /**
  * Created by Hedy on 2017/4/2.
- * terms以被抽取的次数排序
+ * pattern是以被抽取的次数排序，在该算法中只考虑pattern是否出现在多个cluster中
  */
 public class Mutual_Exclusion_Bootstrapping {
     private static final int k = 3;
-    private static final int top = 5;
+    //private static final int top_k = 5;   //topK个tuple
+    private static final int top_p = 5;  //topK个pattern
 
     public static void main(String[] args){
-        String datafile =  "D:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\Extract\\OL_TAB.txt";
-        String seedfile = "D:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\Extract\\seeds.txt";
-        //String driftfile = "D:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\driftpattern.txt";
+        int index = 0;
+        String label = "LO";
+        String[] tag = new String[9];
+        tag[0]="0.85_LO";
+        tag[1]="0.84_ME1";
+        tag[2] = "0.84_MA";
+        tag[3] = "0.84_HO";
+        tag[4] = "0.79_JO";
+        tag[5] = "0.75_TL";
+        tag[6] = "0.75_PR";
+        tag[7] = "0.8_AC";
+        tag[8] = "0.84_HE";
 
-        HashSet<String> all_tuples[] = new HashSet[k];
-        HashSet<String> all_pattern[] = new HashSet[k];    //保存每一个类在迭代抽取过程中最终被保存的所有结果
-        HashMap<String , Integer>[] term = new HashMap[k];    // 保存一轮中每个terms被抽取的次数
-        //HashMap<String , Integer>[] new_term = new HashMap[k];
-        HashSet<String> pa_delete = new HashSet<>();
-        HashSet<String> tu_delete = new HashSet<>();
-        HashSet<String>[] seeds =new HashSet[k];    //保存initial tuple seeds
-        //HashSet<String> drift = new HashSet<>();    //保存会产生漂移的pattern
+        String stdfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\Cluster\\all_Cluster.txt";
+        String datafile =  "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\Extract\\new_OL_data.txt";
+        String seedfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\seeds\\LO_seeds.txt";
+        String mutualfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\mutual_result.txt";
+        String deletefile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\mutual_delete.txt";
 
-        List<Map.Entry<String , Integer>>[] sort_ls = new ArrayList[k];
+        HashMap<String, Double> all_tuples = new HashMap<>();
+        HashMap<String, Double> all_pattern = new HashMap<>();    //保存每一个类在迭代抽取过程中最终被保存的所有结果
 
-        //给每个数组分配空间
-        for (int i = 0 ; i < k ; i++){
-            all_pattern[i] = new HashSet<>();
-            all_tuples[i] = new HashSet<>();
-            term[i] = new HashMap<>();
-            seeds[i] = new HashSet<>();
-        }
-        //从文件中将initial tuple seeds 读取出啦
-        ReadSeeds(seedfile,seeds);
+        HashMap<String , Double> pa = new HashMap<>();
+        HashMap<String, Double> seeds =new HashMap<>();    //保存initial tuple seeds
+        HashMap<String ,Double > pa_delete = new HashMap<>();
+        //HashMap<String ,Double > tu_delete = new HashMap<>();
 
-        boolean flag = true;
+        //从文件中将initial tuple seeds 读取出来
+        OperateTextFile.ReadFileToMap(seedfile,seeds);
+
+        //boolean flag = true;
         int count = 1 ;
-        while (flag){
-            //根据seeds从文件中读取terms
-            ReadPa(datafile,term,seeds);
-            //删除出现在多个class中的pattern,并删除已被抽取过的item
-            flag = DeleteOverlap(term,all_pattern,pa_delete);
-            if(!flag){
+        while (true){
+            //根据seeds从文件中读取pattern
+            pa = new HashMap<>();
+            ReadPa(datafile,pa,seeds);
+            //删除出现在多个class中的pattern,并删除已被抽取过的pattern
+            DeleteOverlap(stdfile,label,pa,pa_delete);
+            //根据被抽取的次数排序,并保存前K个pattern
+            Sort(pa,pa_delete);
+            if (pa.size() == 0 ){   //若没有可用的pattern产生，则结束循环
                 break;
             }
-            //根据被抽取的次数排序
-            sort_ls = Sort(term);
-            //根据排序保存前top k个结果
-            //seeds = new HashSet[k];
-            System.out.println("第"+count+"轮保存的pattern结果有：");
-            Restore(sort_ls,all_pattern,seeds);
+            //将抽取到的pattern都保存到map中，并删除已抽取过的pattern
+            Restore(pa,all_pattern);
+            all_pattern.putAll(pa);
             //根据保存的pattern抽取tuple
-            ReadTuple(datafile,term,seeds);
-            flag = DeleteOverlap(term,all_tuples,tu_delete);
-            if(!flag){
+            seeds = new HashMap<>();
+            ReadTuple(datafile,pa,seeds);
+            //删除已经抽取过的tuple
+            Delete(seeds,all_tuples);
+            all_tuples.putAll(seeds);
+            if (seeds.size() == 0 ){
                 break;
             }
-            //根据被抽取的次数排序
-            sort_ls = Sort(term);
-            System.out.println("第"+count+"轮保存的tuple结果有：");
-            Restore(sort_ls,all_tuples,seeds);
             count++;
-            if(count>= 50){
+            if (count > 10){
                 break;
+            }
+        }
+        //将最后结果写入文件中
+        OperateTextFile.WriteMapToFile(mutualfile,all_pattern);
+        OperateTextFile.WriteMapToFile(mutualfile,all_tuples);
+        //将删除的pattern写入文件中
+        OperateTextFile.WriteMapToFile(deletefile,pa_delete);
+    }
+
+    public static void Delete(HashMap<String ,Double> seeds,HashMap<String ,Double> all){
+        String tu;
+        double count;
+        Map.Entry entry ;
+        Iterator it = seeds.entrySet().iterator();
+        while (it.hasNext()){
+            entry = (Map.Entry) it.next();
+            tu = (String) entry.getKey();
+            if (all.containsKey(tu)){
+                count = (double) entry.getValue();
+                count += all.get(tu);
+                all.put(tu,count);
+                it.remove();
             }
         }
     }
 
-    public static void   ReadTuple(String filename , HashMap<String ,Integer>[] term, HashSet<String>[] seeds){
+    public static void  ReadTuple(String filename , HashMap<String ,Double> pa, HashMap<String , Double> tuple){
+
         try {
             File file = new File(filename);
             if (!file.exists()) {
-                System.out.println("the file failed!");
+                System.out.println("can't find the file!");
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
-            String line = new String();
-            String tuple = new String();
-            String pa;
+            String line;
+            String tu ;
+            String pattern;
             String org,loc;
-            int count;   //记录tuple被抽取的次数
+            double count;   //记录tuple被抽取的次数
             while ((line = br.readLine()) != null) {
-                pa = line.split("\t")[1];
-                for (int i = 0  ; i < k ; i++){
-                    if (seeds[i].contains(pa)){    //找到该pattern所在的分类，保存其抽取到的tuple
-                        loc = line.split("\t")[0].contains("</L>") ? line.split("\t")[0]:line.split("\t")[2];
-                        org = line.split("\t")[2].contains("</O>") ? line.split("\t")[2] : line.split("\t")[0];
-                        tuple = org +"\t" + loc;
-                        if(term[i].containsKey(tuple)) {   //判断该tuple是否已经被抽取过了，若抽取过，则直接修改抽取的次数即可
-                            count = term[i].get(tuple);
-                            count += Integer.parseInt(line.split("\t")[3]);
-                            term[i].put(tuple,count);
-                        }
-                        else {
-                            count = Integer.parseInt(line.split("\t")[3]);
-                            term[i].put(tuple,count);
-                        }
-                        break;
+                pattern = line.split("\t")[1];
+                if (pa.containsKey(pattern)){    //判断该pattern是否需要抽取
+                    loc = line.split("\t")[0].contains("</L>") ? line.split("\t")[0]:line.split("\t")[2];
+                    org = line.split("\t")[2].contains("</O>") ? line.split("\t")[2] : line.split("\t")[0];
+                    tu = org +"\t" + loc;
+                    if(tuple.containsKey(tu)) {   //判断该tuple是否已经被抽取过了，若抽取过，则直接修改抽取的次数即可
+                        count = tuple.get(tu);
+                        count += Integer.parseInt(line.split("\t")[3]);
+                        tuple.put(tu,count);
+                    }
+                    else {
+                        count = Integer.parseInt(line.split("\t")[3]);
+                        tuple.put(tu,count);
                     }
                 }
             }
@@ -114,137 +136,107 @@ public class Mutual_Exclusion_Bootstrapping {
         }
     }
 
-    public static void Restore(List<Map.Entry<String ,Integer>>[] ls, HashSet<String>[] all, HashSet<String>[] set){
+    public static void Restore(HashMap<String , Double> new_pa , HashMap<String , Double> all){
 
         Map.Entry entry ;
-        String item ;
-        for (int i = 0 ;  i < k ; i++){
-            set[i] = new HashSet<>();
-            System.out.println("第"+i+"个类：");
-            for (int j = 0 ; j < top ; j++){
-                entry = ls[i].get(j);
-                item = (String) entry.getKey();
-                all[i].add(item);
-                set[i].add(item);
-                System.out.print(item+"\t");
+        String pa ;
+        double count;
+        Iterator it = new_pa.entrySet().iterator();
+        while (it.hasNext()){
+            entry = (Map.Entry) it.next();
+            pa = (String) entry.getKey();
+            if (all.containsKey(pa)){
+                count = (double) entry.getValue();
+                count += all.get(pa);
+                all.put(pa,count);
+                it.remove();
             }
-            System.out.println();
         }
     }
 
-    public static List<Map.Entry<String , Integer>>[] Sort(HashMap<String ,Integer>[] map){
+    public static void Sort(HashMap<String ,Double> map,HashMap<String ,Double> delete){
 
-        List<Map.Entry<String ,Integer>> ls[] = new ArrayList[k];
-        for (int i = 0 ; i < k ;i++){
-            //将map.entrySet()转换成list
-            List<Map.Entry<String,Integer>> list = new ArrayList<Map.Entry<String, Integer>>(map[i].entrySet());
-            //通过比较器来实现排序
-            Collections.sort(list, new Comparator<Map.Entry<String, Integer>>() {
-                @Override
-                public int compare(Map.Entry<String, Integer> o1, Map.Entry<String, Integer> o2) {
-                    return o1.getValue().compareTo(o2.getValue());
-                }
-            });
-            for (Map.Entry<String ,Integer> mapping : list){
-                System.out.println(mapping.getKey()+":"+mapping.getValue());
+        ValueComparator bvc = new ValueComparator(map);
+        TreeMap<String, Double> sorted_map = new TreeMap<>(bvc);
+        sorted_map.putAll(map);
+        //只保存前topK个pattern
+        Iterator it = sorted_map.entrySet().iterator();
+        int count = 0 ;
+        String pa;
+        while (it.hasNext()){
+            Map.Entry entry = (Map.Entry) it.next();
+            count++;
+            if (count > top_p){   // topK之后的pattern都删除
+                pa = (String) entry.getKey();
+                delete.put(pa,(double)entry.getValue());
+                map.remove(pa);
             }
-            ls[i] = list;
         }
-        return ls;
     }
 
-    public static boolean DeleteOverlap(HashMap<String ,Integer>[] map ,HashSet<String>[] all , HashSet<String> de){
+    public static void DeleteOverlap(String filename , String tag, HashMap<String ,Double> map , HashMap<String , Double> delete){
 
-        Map.Entry entry;
-        String item;
-        boolean flag ;
-        for (int i = 0 ; i < k - 1 ; i ++){
-            Iterator it = map[i].entrySet().iterator();
-            while (it.hasNext()){
-                entry = (Map.Entry)it.next();
-                item = (String) entry.getKey();
-                flag = false;
-                for (int j = i +1 ; j < k ; j++){    //判断其他类别中是否存在相同的item，若若存在，则将flag改为true
-                    if(all[j].contains(item)){
-                        flag = true;
-                    }
-                    if(map[j].containsKey(item)){
-                        flag = true;
-                        map[j].remove(item);
-                    }
-                }
-                if(flag){   //若当前item出现在多个class中，则删除
-                    de.add(item);
-                    it.remove();
-                }
-            }
-        }
-
-        //判断是否每个class都抽取到对象了
-        flag = true;
-        for (int i = 0 ; i < k ; i ++){
-            if (map[i].size() ==0){
-                flag = false;
-                break;
-            }
-        }
-        return flag;
-    }
-
-    public static void ReadSeeds(String filename, HashSet<String>[] set){
-
+        String flag = new String();
+        double count;
+        String line,pa;
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("the file failed!");
+                System.out.println("can't find the file!");
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
-            String line = new String();
-            int count = 0;
             while ((line = br.readLine()) != null){
-                if(line.length() == 0){     //某一类的seeds读取完成后，就进入下一个类别的读取
-                    count++;
+                if (line.contains(":") ){
+                    flag = line.split(":")[0];
                     continue;
                 }
-                set[count].add(line);
+                if (line.equals("")){
+                    continue;
+                }
+                pa = line.split("\t")[0];
+                if (!flag.equals(tag) && map.containsKey(pa) ){   //如果在其他cluster中找到该pattern，则删除
+                    count = map.get(pa);
+                    map.remove(pa);
+                    delete.put(pa,count);
+                }
             }
+
             br.close();
         }catch (IOException e){
             e.printStackTrace();
         }
+
     }
 
-    public static void ReadPa(String filename , HashMap<String , Integer>[] map , HashSet<String>[] set){
+    public static void ReadPa(String filename , HashMap<String , Double> map , HashMap<String , Double> seed){
 
         try{
             File file = new File(filename);
             if(!file.exists()){
-                System.out.println("the file failed!");
+                System.out.println("can't find the file!");
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
-            String line = new String();
-            String tuples = new String();
+            String line;
+            String tuple;
             String loc,org;
-            String pa = new String() , in_pa = new String();
-            int count ;   //记录pattern被抽取的次数
+            String pa  , in_pa ;
+            double count ;   //记录pattern被抽取的次数
             while ((line = br.readLine()) != null){
-                loc = line.split("\t")[0].contains("</L>") ? line.split("\t")[0]:line.split("\t")[2] ;
+                loc = line.split("\t")[0].contains("</L>") ? line.split("\t")[0] : line.split("\t")[2] ;
                 org = line.split("\t")[2].contains("</O>") ? line.split("\t")[2] : line.split("\t")[0];
-                tuples = org +","+ loc;       //将每句中的tuple抽取出来，判断是否是初始tuples
-                for(int i = 0 ; i < k ; i++) {    //找到该tuple所在的分类
-                    if(set[i].contains(tuples)){    //若该tuple是初始tuple，则保存pattern
-                        pa = line.split("\t")[1];
-                        if(!map[i].containsKey(pa)){   //若不包含该pattern，则直接添加
-                            map[i].put(pa,Integer.parseInt(line.split("\t")[3]));
-                            continue;
-                        }
-                        //否则需要修改该pattern被抽取的次数
-                        count = map[i].get(pa);
-                        count += Integer.parseInt(line.split("\t")[3]);
-                        map[i].put(pa,count);
-                        break;
+                tuple = org +"\t"+ loc;       //将每句中的tuple抽取出来，判断是否是初始tuples
+
+                if(seed.containsKey(tuple)){    //若该tuple在初map中，则保存当前的pattern
+                    pa = line.split("\t")[1];
+                    if( !map.containsKey(pa)){
+                        map.put(pa,1.0);
                     }
+                    //否则需要修改该pattern被抽取的次数
+                    count = map.get(pa);
+                    count += Integer.parseInt(line.split("\t")[3]);
+                    map.put(pa,count);
                 }
+
             }
             br.close();
         }catch (IOException e){
