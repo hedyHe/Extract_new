@@ -16,11 +16,11 @@ public class Mutual_Exclusion_Bootstrapping {
     private static final int top_p = 5;  //topK个pattern
 
     public static void main(String[] args){
-        int index = 0;
-        String label = "LO";
+        int index = 8;
+        String label = "HE";
         String[] tag = new String[9];
         tag[0]="0.85_LO";
-        tag[1]="0.84_ME1";
+        tag[1]="0.84_ME_1";
         tag[2] = "0.84_MA";
         tag[3] = "0.84_HO";
         tag[4] = "0.79_JO";
@@ -31,7 +31,7 @@ public class Mutual_Exclusion_Bootstrapping {
 
         String stdfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\Cluster\\all_Cluster.txt";
         String datafile =  "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\Extract\\new_OL_data.txt";
-        String seedfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\seeds\\LO_seeds.txt";
+        String seedfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\seeds\\"+label+"_seeds.txt";
         String mutualfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\mutual_result.txt";
         String deletefile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\mutual_delete.txt";
 
@@ -43,6 +43,7 @@ public class Mutual_Exclusion_Bootstrapping {
         HashMap<String ,Double > pa_delete = new HashMap<>();
         //HashMap<String ,Double > tu_delete = new HashMap<>();
 
+        long startTime =  System.nanoTime();   //获取开始时间
         //从文件中将initial tuple seeds 读取出来
         OperateTextFile.ReadFileToMap(seedfile,seeds);
 
@@ -76,6 +77,11 @@ public class Mutual_Exclusion_Bootstrapping {
                 break;
             }
         }
+
+        long endTime = System.nanoTime();
+        double time = endTime - startTime;
+        //将运行的时间保存在pattern的文件中
+        all_pattern.put("运行时间:(ns)",time);
         //将最后结果写入文件中
         OperateTextFile.WriteMapToFile(mutualfile,all_pattern);
         OperateTextFile.WriteMapToFile(mutualfile,all_tuples);

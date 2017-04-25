@@ -109,11 +109,11 @@ public class SelfAlgorithm {
     }
 
     public static void main(String[] args ){
-        String tag = "0.85_LO";
+        String tag = "0.84_ME_1";
         String datafile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\Extract\\OL_TAB.txt";
         String patternfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\pattern.txt";
         String tuplefile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\tuples.txt";
-        String stdfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\result\\correct.txt";
+        String stdfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\Cluster\\all_Cluster.txt";
         String matrixfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\Matrix.txt";
         String randomfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\RandomWalk.txt";
         String freaturefile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\Feature.txt";
@@ -260,12 +260,11 @@ public class SelfAlgorithm {
                 f.setStandDev(0);
             }
             else{
-                System.out.println("the size of ls :"+ls.size());
+                //System.out.println("the size of ls :"+ls.size());
                 f.setSub(sub.get(order).size());
                 //计算性质6的值
                 count = sub.get(order).size();
                 score = 0 ;
-                sc = 0;
                 for (int i = 0 ; i < count; i++){
                     sc = sub.get(order).get(i);
                     score += ( sc - f.getP4()) * ( sc - f.getP4());
@@ -354,7 +353,7 @@ public class SelfAlgorithm {
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("can't find the file!");
+                System.out.println("can't find the file!"+filename);
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
@@ -363,12 +362,12 @@ public class SelfAlgorithm {
                 if(line.equals("") || line.contains(":")){
                     continue;
                 }
-                if (pattern.containsKey(line)){
-                    f = pattern.get(line);
+                if (pattern.containsKey(line.split("\t")[0])){
+                    f = pattern.get(line.split("\t")[0]);
                     //System.out.println(line+f.getP2());
                     f.setP2(1+f.getP2());   //被抽取的聚类的个数加1
                     f.setMaxlevel(max);
-                    pattern.put(line,f);
+                    pattern.put(line.split("\t")[0],f);
                 }
 
             }

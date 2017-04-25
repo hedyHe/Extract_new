@@ -12,10 +12,10 @@ public class RandomWalk {
     public static final double MIN_ERRORS = 0.00001;
     public static final double alpha = 0.8;
     //public static final int seeds_size = 2;
-    private static final java.text.DecimalFormat df = new java.text.DecimalFormat("0.0000");
+    private static final java.text.DecimalFormat df = new java.text.DecimalFormat("0.00000");
 
     public static void main(String[] args){
-        String tag = "0.85_LO";
+        String tag = "0.84_ME_1";
         //String filename = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\0.85_LO\\tuples.txt";
         String filename = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\pattern.txt";
         String tuplefile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\tuplesofpattern.txt";
@@ -104,6 +104,7 @@ public class RandomWalk {
         HashMap<Integer, double[]> result = new HashMap<>();
         result = RWRGraph(pa_order,pa_seq,Adj_matrix);    //pa_order保存的是每个pattern被抽取的轮次，Adj_matrix是邻接矩阵
 
+        System.out.println("找出相关度最小和最大的pattern:");
         int max_index,min_index;
         double max,min ;
         for (Integer key : result.keySet()){
@@ -214,7 +215,7 @@ public class RandomWalk {
             if ((Integer)entry.getValue() != 1 ){
                 continue;
             }
-            System.out.println(pattern+"的ranking score为:");
+            //System.out.println(pattern+"的ranking score为:");
             arr = randomWalkRestart((Integer) seq.get(pattern),graph);
             map.put((Integer)seq.get(pattern),arr);
         }
