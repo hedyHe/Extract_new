@@ -4,6 +4,9 @@ import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.converters.ArffSaver;
+
+import java.io.*;
 
 
 /**
@@ -28,14 +31,8 @@ public class arff {
         String arfffile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\data.arff";
 
         FastVector atts;
-        FastVector attsRel;
         FastVector attVals;
-        FastVector attValsRel;
         Instances data;
-        //Instances dataRel;
-        double[] vals;
-        double[] valsRel;
-        int i ;
 
         //set up attributes
         atts = new FastVector();
@@ -43,68 +40,88 @@ public class arff {
         atts.addElement(new Attribute("att1"));
         //属性2是互斥的聚类个数
         atts.addElement(new Attribute("att2"));
-        atts.addElement(new Attribute("att3",(FastVector)null));
-        atts.addElement(new Attribute("att4","yyyy-MM-dd"));
-        attsRel = new FastVector();
-        attsRel.addElement(new Attribute("att5.1"));
-        attValsRel = new FastVector();
-        for (i = 0; i < 5; i++){
-            attValsRel.addElement("val5."+(i+1));
-        }
-        attsRel.addElement(new Attribute("att5.2",attValsRel));
-        //dataRel = new Instances("att5",attsRel,0);
-        //atts.addElement(new Attribute("att5", dataRel, 0));
+        //属性3是随机游走的得分
+        atts.addElement(new Attribute("att3"));
+        //属性4是子集的平均得分
+        atts.addElement(new Attribute("att4"));
+        //属性5是子集的个数
+        atts.addElement(new Attribute("att5"));
+        //属性6是子集的标准偏差
+        atts.addElement(new Attribute("att6"));
+        //属性7是该pattern被抽取的轮次
+        atts.addElement(new Attribute("att7"));
+        //属性8是该概念下的抽取到的所有的pattern的个数
+        atts.addElement(new Attribute("att8"));
+        //属性9是该概念下能抽取的最大轮次
+        atts.addElement(new Attribute("att9"));
+        //最后一列是分类结果
+        //atts.addElement(new Attribute("class"),(new ));
+       /* attVals = new FastVector();
+        attVals.addElement("T");
+        attVals.addElement("F");
+        attVals.addElement("D");
+        atts.addElement(new Attribute("class",attVals));*/
 
-        data = new Instances("MyRelation",atts,0);
+        data = new Instances("Pattern",atts,0);
+        /*double[] vals=new double[data.numAttributes()];
+        vals[0]=Math.PI;
+        vals[1]=1;
+        vals[2]=0;
+        vals[3] = 1;
+        data.add(new Instance(1.0,vals));*/
+
+        //data.setClassIndex(data.numAttributes());
         CreateInstance(filename,data);
-        //fill with data
-        vals = new double[data.numAttributes()];
-        vals[0] = Math.PI;
-        vals[1] = attVals.indexOf("val3");
-        vals[2] = data.attribute(2).addStringValue("This is a string!");
-        vals[3] = data.attribute(3).parseDate("2001-11-09");
-        //dataRel = new Instances(data.attribute(4).relation(), 0);
-        // -- first instance  
-        valsRel = new double[2];
-        valsRel[0] = Math.PI + 1;
-        valsRel[1] = attValsRel.indexOf("val5.3");
-        //dataRel.add(new Instance(1.0, valsRel));
-        // -- second instance  
-        valsRel = new double[2];
-        valsRel[0] = Math.PI+2;
-        valsRel[1] = attValsRel.indexOf("val5.2");
-        //dataRel.add(new Instance(1.0,valsRel));
-        //vals[4] = data.attribute(4).addRelation(dataRel);
-        // add  
-        data.add(new Instance(1.0,vals));
-
-        // second instance  
-        vals = new double[data.numAttributes()];// important: needs NEW array!  
-        // - numeric  
-        vals[0] = Math.E;
-        // - nominal  
-        vals[1] = attVals.indexOf("val1");
-        // - string  
-        vals[2] = data.attribute(2).addStringValue("And another one!");
-        // - date  
-        vals[3] = data.attribute(3).parseDate("2000-12-01");
-        // - relational  
-        //dataRel = new Instances(data.attribute(4).relation(),0);
-        // -- first instance  
-        valsRel = new double[2];
-        valsRel[0] = Math.E+1;
-        valsRel[1] = attValsRel.indexOf("val5.4");
-        //dataRel.add(new Instance(1.0, valsRel));
-        // -- second instance  
-        valsRel = new double[2];
-        valsRel[0] = Math.E+2;
-        valsRel[1] = attValsRel.indexOf("val5.1");
-        //dataRel.add(new Instance(1.0,valsRel));
-        //vals[4] = data.attribute(4).addRelation(dataRel);
-        // add  
-        data.add(new Instance(1.0,vals));
-        // 4. output data  
         System.out.println(data);
+        //将数据写入文件夹中
+        WriteToArff(arfffile,data);
+
+    }
+
+
+    public static void WriteToArff(String filename, Instances data){
+        System.out.println("将数据写入文件中");
+        System.out.println(data);
+
+        ArffSaver saver = new ArffSaver();
+        saver.setInstances(data);
+
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+            bw.write(data.toString());
+            bw.flush();
+            bw.close();
+            /*saver.setFile(new File(filename));
+            saver.writeBatch();*/
+        }catch (IOException e){
+            System.out.println(e.toString());
+            e.printStackTrace();
+        }
+    }
+
+    public static void CreateInstance(String filename, Instances data){
+
+        double[] vals ;
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                System.out.println("can't find the file!");
+            }
+            String line ;
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            Instance instance;
+            while ((line = br.readLine()) != null){
+                //instance = new DenseInstance(data.numAttributes());
+                vals = new double[data.numAttributes()];
+                for (int i = 0 ; i < 9 ; i++){
+                    vals[i] = Double.parseDouble(line.split("\t")[i+1]);
+                }
+                data.add(new Instance(1.0,vals));
+            }
+            br.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
 
     }
 
