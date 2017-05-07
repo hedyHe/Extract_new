@@ -15,13 +15,26 @@ public class RandomWalk {
     private static final java.text.DecimalFormat df = new java.text.DecimalFormat("0.00000");
 
     public static void main(String[] args){
-        String tag = "0.84_ME_1";
+
+        int index = 0;
+        String[] tag = new String[9];
+        tag[0] = "0.85_LO";
+        tag[1] = "0.84_ME_1";
+        tag[2] = "0.84_MA";
+        tag[3] = "0.84_HO";
+        tag[4] = "0.79_JO";
+        tag[5] = "0.75_TL";
+        tag[6] = "0.75_PR";
+        tag[7] = "0.8_AC";
+        tag[8] = "0.84_HE";
+
         //String filename = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\0.85_LO\\tuples.txt";
-        String filename = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\pattern.txt";
-        String tuplefile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\tuplesofpattern.txt";
-        String patternfile ="F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\patternoftuples.txt";
-        String matrixfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\" + tag +"\\Matrix.txt";
-        String randomfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag+"\\RandomWalk.txt";
+        String filename = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\pattern.txt";
+        String tuplefile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\tuplesofpattern.txt";
+        String patternfile ="F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\patternoftuples.txt";
+        String matrixfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\" + tag[index] +"\\RWR_Matrix.txt";
+        String randomfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index] +"\\RWR.txt";
+        String F_file = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\" + tag[index] + "\\RWR_F_score.txt";
         //HashSet<String> tu_set = new HashSet<>();
         //HashSet<String> pa_set = new HashSet<>();
         HashMap<String, Integer> pa_order= new HashMap<>();    //记录每个pattern被抽取的轮次
@@ -43,11 +56,12 @@ public class RandomWalk {
         length = pa_order.size();
         System.out.println("the length is :"+length);
         //建立pattern之间的关系
-        int [][] dir_graph = new int[length][length];
+
+        int [][] dir_graph ;
         dir_graph = FindRelation(pa_map,tu_map,pa_order,pa_seq);
         OperateTextFile.WriteMatricToFile(matrixfile,dir_graph,length);
         int count = 0 ;
-        //建立邻接矩阵
+
         int[][] new_graph = new int[length][length] ;
         for (int i = 0 ;  i < length ; i ++){
             for (int j = 0 ; j  < length ; j++){
@@ -59,19 +73,13 @@ public class RandomWalk {
         }
         System.out.println("the count = "+count);
 
+        //建立邻接矩阵
         count = 0 ;
         for (int i = 0 ; i < length  ; i++){
             for (int j = 0 ; j < length  ; j++){
                 if (dir_graph[i][j] == 1){
                     new_graph[j][i] = 1;
                     count++;
-                    /*for (int k = j + 1 ; k < length ; k++){
-                        if (dir_graph[j][k] == 1){
-                            new_graph[k][j] = 1;
-                            new_graph[k][i] = 1;
-                            count++;
-                        }
-                    }*/
                 }
             }
         }
@@ -102,8 +110,34 @@ public class RandomWalk {
 
         OperateTextFile.WriteMatricToFile1(matrixfile,Adj_matrix,length);
         HashMap<Integer, double[]> result = new HashMap<>();
-        result = RWRGraph(pa_order,pa_seq,Adj_matrix);    //pa_order保存的是每个pattern被抽取的轮次，Adj_matrix是邻接矩阵
+        result = RWRGraph(pa_order,pa_seq,Adj_matrix,length);    //pa_order保存的是每个pattern被抽取的轮次，Adj_matrix是邻接矩阵
 
+
+        OperateTextFile.WriteMaptoFile(randomfile,result,pa_seq,length);
+        HashMap<String,Double> maxmin = new HashMap<>();
+        FindMaxMin(result,pa_seq,maxmin,length);
+
+        //求相关度的平均值
+        double[] mean_value = new double[length];
+        double[] degree = new double[length];
+        Iterator it = result.entrySet().iterator();
+        while (it.hasNext()){
+            Map.Entry entry = ( Map.Entry ) it.next();
+            degree = (double[]) entry.getValue();
+            for (int i = 0 ; i  < length ; i ++){
+                mean_value[i] = degree[i];
+            }
+        }
+        for (int i = 0 ; i < length ; i++){
+            mean_value[i] = Double.parseDouble(df.format(mean_value[i] / result.size()));
+        }
+
+        OperateTextFile.writeArrayToFile(F_file,mean_value,pa_seq);
+
+    }
+
+    //找出相似度的最大值和最小值
+    public static void FindMaxMin(HashMap<Integer,double[]> result ,HashMap<String,Integer> pa_seq, HashMap<String , Double> maxmin,int size){
         System.out.println("找出相关度最小和最大的pattern:");
         int max_index,min_index;
         double max,min ;
@@ -113,11 +147,11 @@ public class RandomWalk {
             min = 10000 ;
             min_index = 0;
             max_index = 0;
-            for (int i = 0 ;i < length ; i++){
+            for (int i = 0 ;i < size ; i++){
                 if (i == key){
                     continue;
                 }
-                if (arr[i] > max){
+                if (arr[i] >= max){
                     max_index = i ;
                     max = arr[i];
                 }
@@ -135,6 +169,14 @@ public class RandomWalk {
             while (it.hasNext()){
                 Map.Entry entry = (Map.Entry) it.next();
                 int seq = (int)entry.getValue();
+                if (seq == max_index){
+                    maxmin.put((String)entry.getKey(),max);
+                }
+                else {
+                    if (seq == min_index){
+                        maxmin.put((String) entry.getKey(),min);
+                    }
+                }
                 if (seq == max_index || seq == key || seq == min_index){
                     System.out.println(seq +" 是:"+ entry.getKey());
                     num++;
@@ -144,16 +186,15 @@ public class RandomWalk {
                 }
             }
         }
-        OperateTextFile.WriteMaptoFile(randomfile,result,pa_seq,length);
     }
 
     //RWR
-    public static double[] randomWalkRestart( int startPoint , double transMatrix[][]){
+    public static double[] randomWalkRestart( int startPoint , double transMatrix[][], int size ){
         int iterationTimes = 0;
-        double[] rank_sp = new double[length];
-        double[] e = new double[length];
+        double[] rank_sp = new double[size];
+        double[] e = new double[size];
         //init rank_sp, set identify vector
-        for(int i = 0 ; i < length; i++){
+        for(int i = 0 ; i < size; i++){
             if(i == startPoint){
                 rank_sp[i] = 1.0;
                 e[i] = 1.0;
@@ -165,28 +206,29 @@ public class RandomWalk {
         boolean flag = true;
         double tep ;
         while(iterationTimes < MAX_ITERATION_TIMES){
-            double[] temp = rank_sp;
+            double[] temp = new double[length];
             if(flag == true){
-                for(int i = 0; i < length ; i++){
+                for(int i = 0; i < size ; i++){
+                    temp[i] = rank_sp[i];
                     tep = 0 ;
-                    for(int j = 0; j < length ; j++){
+                    for(int j = 0; j < size; j++){
                         tep += Double.parseDouble(df.format(alpha*transMatrix[i][j]*rank_sp[j]));
                     }
-                    //System.out.println();
-                    rank_sp[i]+= tep;
+                    rank_sp[i] = tep ;
                     tep = Double.parseDouble(df.format((1-alpha)*e[i]));
-                    rank_sp[i]+= tep;
+                    rank_sp[i] += tep ;
                     rank_sp[i] = Double.parseDouble(df.format(rank_sp[i]));
                     //System.out.print(rank_sp[i]+"\t");
                 }
                 if(judge(temp,rank_sp, MIN_ERRORS)){
-                    flag = false;
+                    flag = false ;
                 }
             }else
                 break;
             iterationTimes++;
         }
 
+        System.out.println("进行到第"+iterationTimes+"轮!");
         return rank_sp;
     }
 
@@ -204,7 +246,7 @@ public class RandomWalk {
         return flag;
     }
 
-    public static HashMap<Integer,double[]> RWRGraph(HashMap<String ,Integer> pa , HashMap<String,Integer> seq,double[][] graph){
+    public static HashMap<Integer,double[]> RWRGraph(HashMap<String ,Integer> pa , HashMap<String,Integer> seq,double[][] graph ,int size){
         double[] arr;
         HashMap<Integer , double[]> map = new HashMap<>();
         Iterator it = pa.entrySet().iterator();
@@ -212,12 +254,12 @@ public class RandomWalk {
         while (it.hasNext()){
             Map.Entry entry =(Map.Entry) it.next();
             pattern = (String) entry.getKey();
-            if ((Integer)entry.getValue() != 1 ){
+            if ((Integer)entry.getValue() != 1 ){   //判断是否是第一轮抽取到的pattern
                 continue;
             }
             //System.out.println(pattern+"的ranking score为:");
-            arr = randomWalkRestart((Integer) seq.get(pattern),graph);
-            map.put((Integer)seq.get(pattern),arr);
+            arr = randomWalkRestart((Integer) seq.get(pattern),graph,size);
+            map.put((Integer)seq.get(pattern),arr);      //seq保存的是每个pattern在数组中的位置，
         }
         return map;
     }
@@ -252,7 +294,7 @@ public class RandomWalk {
                         }
                         beh_order = order.get(p);     //若该pattern是被抽取到的，则保存其被抽取的轮次 ，及其在二维数组中的位置
                         seq_2 = seq.get(p);
-                        if (beh_order == pre_order){    //若这两个pattern是在同一轮被抽取的，则两者间不同在边
+                        if (beh_order == pre_order){    //若这两个pattern是在同一轮被抽取的，则两者间不存在边
                             continue;
                         }
                         if (Math.abs(beh_order-pre_order) != 1){    //若两个pattern被抽取的轮次相差大于1则这两个pattern之间也没有边

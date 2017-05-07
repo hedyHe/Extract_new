@@ -1,5 +1,7 @@
 package Snowball;
 
+import sun.reflect.generics.tree.Tree;
+
 import java.io.*;
 import java.util.*;
 
@@ -7,6 +9,79 @@ import java.util.*;
  * Created by Hedy on 2017/4/11.
  */
 public class OperateTextFile {
+
+    public static void writeArrayToFile(String filename, double[] score , HashMap<String ,Integer> map){
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                file.createNewFile();
+            }
+            BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
+            Iterator it = map.entrySet().iterator();
+            String pa;
+            int index;
+            while (it.hasNext()){
+                Map.Entry entry = (Map.Entry) it.next();
+                pa = (String) entry.getKey();
+                index = (Integer) entry.getValue();
+                wr.write(pa+"\t"+score[index]+"\n");
+            }
+            wr.write("\n");
+            wr.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void  writeMapTofile(String filename,HashMap<String,Integer> map){
+        try {
+            File f = new File(filename);
+
+            if (!f.exists()){
+                f.createNewFile();
+            }
+            BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f,true)));
+            Iterator it = map.entrySet().iterator();
+            String elem ;
+            int index;
+
+            while (it.hasNext()){
+                Map.Entry entry =(Map.Entry) it.next();
+                elem = (String) entry.getKey();
+                index = (Integer) entry.getValue();
+                wr.write(elem +"\t"+index+"\n");
+            }
+            wr.write("\n");
+            wr.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void WriteMapToFile(String filename, TreeMap<String, Double> map){
+        Iterator it = map.entrySet().iterator();
+        String key ;
+        double count;
+
+        try {
+            File file = new File(filename);
+            if (!file.exists()){
+                file.createNewFile();
+            }
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
+            while (it.hasNext()){
+                Map.Entry entry = (Map.Entry) it.next();
+                key = (String) entry.getKey();
+                count = (Double) entry.getValue();
+                bw.write(key+"\t"+count+"\n");
+            }
+            bw.write("\n");
+            bw.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
 
     public static void WriteMapToFile(String filename, HashMap<String,Double> map){
         Iterator it = map.entrySet().iterator();
@@ -62,7 +137,7 @@ public class OperateTextFile {
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("can't find the file!");
+                System.out.println("can't find the file!"+filename);
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
@@ -125,7 +200,7 @@ public class OperateTextFile {
         try{
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("can't find the file!");
+                System.out.println("can't find the file!"+filename);
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line , tu;
@@ -194,6 +269,7 @@ public class OperateTextFile {
                 file.createNewFile();
             }
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file,true)));
+            bw.write("matrix:"+"\n");
             for (int i = 0 ;  i < lentgh ; i++ ){
                 for (int  j = 0 ; j  < lentgh ; j++){
                     bw.write(matrix[i][j]+"\t");
@@ -211,7 +287,7 @@ public class OperateTextFile {
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("can't find the file!");
+                System.out.println("can't find the file!"+filename);
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line,org,loc;
@@ -235,19 +311,36 @@ public class OperateTextFile {
         }
     }
 
-    public static void ReadFile(String filename, HashSet<String> set){
+    public static void ReadFileToMap(String filename, HashMap<String,Integer >map , HashMap<String , Integer> order, int tab , int start){
+
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("can't find the file!");
+                System.out.println("can't find the file!"+filename);
             }
             String line ;
+            String elelment ;
+            int index = 0 ;   //轮次的下标
             BufferedReader br = new BufferedReader(new FileReader(file));
+
             while ((line = br.readLine())!= null){
-                if (line.contains(":") || line.equals("")){
+                if (line.contains(":") ){
+                    index++;
                     continue;
                 }
-                set.add(line.split("\t")[0]);
+                if(line.equals("")){
+                    continue;
+                }
+                if (tab == 1){   //如果是pattern，直接取
+                    elelment = line.split("\t")[0];
+
+                }
+                else {
+                    elelment = line.split("\t")[0]+"\t"+line.split("\t")[1];
+                }
+
+                map.put(elelment,start++);
+                order.put(elelment,index);
             }
             br.close();
         }catch (IOException e){
@@ -258,6 +351,9 @@ public class OperateTextFile {
     public static void ReadFiletoMap(String filename , HashMap<String,HashSet<String>> map){
         try{
             File file = new File(filename);
+            if (!file.exists()){
+                System.out.println("can't find the file!"+filename);
+            }
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line ,tuple=null ;
             HashSet<String> set ;
@@ -292,7 +388,7 @@ public class OperateTextFile {
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("can't find the file!");
+                System.out.println("can't find the file!"+filename);
             }
             String line ;
             BufferedReader br = new BufferedReader(new FileReader(file));
@@ -337,23 +433,21 @@ public class OperateTextFile {
         }
     }
 
-    public static void ReadFiletotupleSet(String filename, String tag , HashSet<String> tuple){
+    public static void ReadFiletoSet(String filename, HashSet<String> set){
+
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("the file failed!");
+                System.out.println("the file failed!"+filename);
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
+            String line , elem;
             while ((line = br.readLine())!= null){
-                if (line.contains(tag)){
-                    while (!(line = br.readLine()).equals("")){
-                        if (line.contains("<")){
-                            tuple.add(line);
-                        }
-                    }
-                    break;
+                if (line.contains(":") || line.equals("") || line.contains("<")){
+                    continue;
                 }
+                elem = line.split("\t")[0];
+                set.add(elem);
             }
             br.close();
         }catch (IOException e){
@@ -365,7 +459,7 @@ public class OperateTextFile {
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("the file failed!");
+                System.out.println("the file failed!"+filename);
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
@@ -478,7 +572,7 @@ public class OperateTextFile {
         try {
             File file = new File(filename);
             if (!file.exists()){
-                System.out.println("the file failed!");
+                System.out.println("the file failed!" + filename);
             }
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line, org, loc,arg1,arg2,pattern;
