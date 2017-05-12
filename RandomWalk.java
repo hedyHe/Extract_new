@@ -16,7 +16,7 @@ public class RandomWalk {
 
     public static void main(String[] args){
 
-        int index = 0;
+        int index = 8;
         String[] tag = new String[9];
         tag[0] = "0.85_LO";
         tag[1] = "0.84_ME_1";
@@ -119,20 +119,34 @@ public class RandomWalk {
 
         //求相关度的平均值
         double[] mean_value = new double[length];
-        double[] degree = new double[length];
+        double[] degree ;
         Iterator it = result.entrySet().iterator();
         while (it.hasNext()){
             Map.Entry entry = ( Map.Entry ) it.next();
             degree = (double[]) entry.getValue();
             for (int i = 0 ; i  < length ; i ++){
-                mean_value[i] = degree[i];
+                mean_value[i] += degree[i];    //对应的分数相加
             }
         }
         for (int i = 0 ; i < length ; i++){
             mean_value[i] = Double.parseDouble(df.format(mean_value[i] / result.size()));
         }
 
-        OperateTextFile.writeArrayToFile(F_file,mean_value,pa_seq);
+        //根据均值排序,先将各个pattern对应到分数，建立一个映射，进行排序
+        HashMap<String,Double> map = new HashMap<>();
+        it = pa_seq.entrySet().iterator();
+        String pa;
+        while (it.hasNext()){
+            Map.Entry entry = (Map.Entry)it.next();
+            pa =(String) entry.getKey();
+            index = (Integer) entry.getValue();
+            map.put(pa,mean_value[index]);
+        }
+        ValueComparator bvc = new ValueComparator(map);
+        TreeMap<String, Double> sorted_map = new TreeMap<>(bvc);
+        sorted_map.putAll(map);
+
+        OperateTextFile.WriteMapToFile(F_file,sorted_map);
 
     }
 

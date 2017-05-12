@@ -23,7 +23,7 @@ public class PRDuality {
     private static final java.text.DecimalFormat df = new java.text.DecimalFormat("0.000000");
 
     public static void main(String[] args) {
-        int index = 0 ;
+        int index = 6 ;
         String[] tag = new String[9];
         tag[0] = "0.85_LO";
         tag[1] = "0.84_ME_1";
@@ -120,11 +120,12 @@ public class PRDuality {
         //计算每个元素的F-score
         HashMap<String, Double> F_score = new HashMap<>();
         Cacluate_F(recall,precision,all_elem,F_score);
-        OperateTextFile.WriteMapToFile(F_file,F_score);
+        //OperateTextFile.WriteMapToFile(F_file,F_score);
 
         //根据F值排序
         ValueComparator bvc = new ValueComparator(F_score);
         TreeMap<String,Double> sorted_map = new TreeMap<>(bvc);
+        sorted_map.putAll(F_score);
         OperateTextFile.WriteMapToFile(F_file,sorted_map);
 
     }
@@ -224,6 +225,7 @@ public class PRDuality {
                 all++;
             }
         }
+        System.out.println("all = " +all);
         double re = Double.parseDouble(df.format(1.0 / all));
         //System.out.print(re+"\t");
         it = tu_level.entrySet().iterator();

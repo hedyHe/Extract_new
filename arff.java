@@ -7,6 +7,7 @@ import weka.core.Instances;
 import weka.core.converters.ArffSaver;
 
 import java.io.*;
+import java.util.HashSet;
 
 
 /**
@@ -15,7 +16,7 @@ import java.io.*;
 public class arff {
 
     public static void main(String[] args ) throws Exception{
-        int index = 0;
+        int index = 8 ;
         String[] tag = new String[9];
         tag[0]="0.85_LO";
         tag[1]="0.84_ME_1";
@@ -29,9 +30,11 @@ public class arff {
 
         String filename ="F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\Feature.txt";
         String arfffile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\punish\\result\\"+tag[index]+"\\data.arff";
+        String stdfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\result\\correct.txt";
+        String driftfile = "F:\\Study\\Semanticdrift\\Data\\ValidData\\Snowball\\final\\result\\drift_pattern.txt";
 
         FastVector atts;
-        FastVector attVals;
+        FastVector attVals ;
         Instances data;
 
         //set up attributes
@@ -54,13 +57,14 @@ public class arff {
         atts.addElement(new Attribute("att8"));
         //属性9是该概念下能抽取的最大轮次
         atts.addElement(new Attribute("att9"));
+        //属性10是分类结果
+        //atts.addElement(new Attribute("att0"));
         //最后一列是分类结果
-        //atts.addElement(new Attribute("class"),(new ));
-       /* attVals = new FastVector();
-        attVals.addElement("T");
-        attVals.addElement("F");
-        attVals.addElement("D");
-        atts.addElement(new Attribute("class",attVals));*/
+        attVals = new FastVector();
+        attVals.addElement("0");
+        attVals.addElement("1");
+        attVals.addElement("2");
+        atts.addElement(new Attribute("class",attVals));
 
         data = new Instances("Pattern",atts,0);
         /*double[] vals=new double[data.numAttributes()];
@@ -71,7 +75,8 @@ public class arff {
         data.add(new Instance(1.0,vals));*/
 
         //data.setClassIndex(data.numAttributes());
-        CreateInstance(filename,data);
+        String label = tag[index].split("_")[1];
+        CreateInstance(filename,stdfile,driftfile,label,data);
         System.out.println(data);
         //将数据写入文件夹中
         WriteToArff(arfffile,data);
@@ -99,26 +104,68 @@ public class arff {
         }
     }
 
-    public static void CreateInstance(String filename, Instances data){
+    public static void CreateInstance(String filename, String stdfile,String driftfile,String tag,Instances data){
 
+        HashSet<String> set = new HashSet<>();
         double[] vals ;
         try {
             File file = new File(filename);
+            File std = new File(stdfile);
+            File drift = new File(driftfile);
+            if (!drift.exists()){
+                System.out.println("can't find the file!"+driftfile);
+            }
+            if (!std.exists()){
+                System.out.println("can't find the file!"+stdfile);
+            }
             if (!file.exists()){
-                System.out.println("can't find the file!");
+                System.out.println("can't find the file!"+filename);
             }
             String line ;
             BufferedReader br = new BufferedReader(new FileReader(file));
-            Instance instance;
+            BufferedReader br1 = new BufferedReader(new FileReader(std));
+            BufferedReader br2 = new BufferedReader(new FileReader(drift));
+            //从文件中将发生漂移的drift读取出来
+            HashSet<String> driftset = new HashSet<>();
+            while ((line = br2.readLine()) != null){
+                driftset.add(line);
+            }
+            //从文件中将正确的pattern读取出来
+            boolean flag = false ;
+            while ((line = br1.readLine()) != null){
+                if (line.contains(tag+":")){
+                    flag = true;
+                }
+                if (flag){
+                    //如果读取到tuple，则结束读取
+                    if (line.contains("</O>")){
+                        break;
+                    }
+                    set.add(line);
+                }
+            }
+
             while ((line = br.readLine()) != null){
                 //instance = new DenseInstance(data.numAttributes());
                 vals = new double[data.numAttributes()];
                 for (int i = 0 ; i < 9 ; i++){
                     vals[i] = Double.parseDouble(line.split("\t")[i+1]);
                 }
+                if (!set.contains(line.split("\t")[0])){
+                    vals[9] = 0 ;
+                }
+                else{
+                    if (driftset.contains(line.split("\t")[0])){
+                        vals[9] = 2 ;   //如果是漂移点，则设置为2
+                    }
+                    else
+                        vals[9] = 1 ;   //正确的就是1
+                }
                 data.add(new Instance(1.0,vals));
             }
             br.close();
+            br1.close();
+            br2.close();
         }catch (IOException e){
             e.printStackTrace();
         }
